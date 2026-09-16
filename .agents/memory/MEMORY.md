@@ -1,0 +1,1 @@
+- [Imported Remix toolchain](remix-import-toolchain.md) — scope esbuild overrides for Remix/Vite imports or the dev server can fail during dependency transforms.

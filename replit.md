@@ -1,9 +1,10 @@
-# [Project name]
+# Bolt DIY
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Bolt DIY is an AI-powered full-stack web development environment imported from StackBlitz Labs.
 
 ## Run & Operate
 
+- `pnpm --filter @workspace/bolt-diy run dev` — run the Bolt DIY preview
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
@@ -13,7 +14,7 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Stack
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
+- pnpm workspaces, Node.js 24, TypeScript 5.9, Remix 2, Vite 5
 - API: Express 5
 - DB: PostgreSQL + Drizzle ORM
 - Validation: Zod (`zod/v4`), `drizzle-zod`
@@ -22,23 +23,32 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- Bolt DIY app: `artifacts/bolt-diy`
+- Bolt routes and UI: `artifacts/bolt-diy/app`
+- Bolt build configuration: `artifacts/bolt-diy/vite.config.ts`
+- Shared API server: `artifacts/api-server`
+- Shared libraries: `lib/`
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- The imported Bolt application remains isolated in its own web artifact so its Remix routes and dependencies do not mix with the shared API package.
+- The app binds to the artifact-provided `PORT` and `BASE_PATH` so it works through the project preview proxy.
+- The workspace keeps its existing API server and shared libraries available for future integrations.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Generate and edit full-stack applications from natural-language prompts.
+- Chat with configurable AI model providers.
+- Preview and manage generated project files in the browser.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Keep the imported Bolt DIY source recognizable and avoid replacing it with a mock implementation.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- The Bolt artifact uses Remix’s Vite dev server, not the shared API server.
+- The imported Remix toolchain needs its compatible esbuild versions; the workspace override keeps Vite and Remix compiler versions scoped separately.
 
 ## Pointers
 
