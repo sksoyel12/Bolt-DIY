@@ -12,3 +12,5 @@ When importing a Remix application into this workspace, keep the workspace’s s
 The Vite dev server also needs `server.allowedHosts: true` for Replit’s generated preview hostname; binding to `0.0.0.0` alone is not sufficient.
 
 When the imported app’s client stays on its hydration fallback, inspect browser module errors for named icon exports before changing the root layout; `react-icons` version drift can break the whole client bundle.
+
+For a large imported Remix app, Vite `server.warmup.clientFiles` can reduce the first preview request from a long cold transform while preserving the original UI and route structure.
