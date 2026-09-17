@@ -1,0 +1,53 @@
+API KEYS — Reference File
+===========================
+
+Groq API Key
+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
+
+Gemini API Key
+AQ.Ab8RN6Ls0Z-bdzqBRRtzxdTgTrVqV8m_IqCBH0VT4gPxprWUiA
+
+OpenAI API Key (1)
+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
+
+Ollama API Key
+b46816c47a914c87af08820434691ec2.OZB7TbwztskChpRPeMx47mRz
+
+Kimi API Key
+skC66WwejK0dwuUfcTPCELAL7bGapnpHgU9f0vVuLoPKUKsg86Xs
+
+OpenRouter API Key
+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
+
+DeepSeek API Key
+sk-282aed3ac4b24cb88ee771dfffe7c929
+
+Z.AI API Key
+aab94640817b473890ceb763e0ca4efd.8tvBvAKc5NfuPEP1
+
+Moonshot AI API Key
+sk-56ZEPStJKGWbJdMmmeCj10SX5YgbA3usDetfWiQAnQR8scEb
+
+Upstage API Key
+up_7hSruzauBCneIMRI9FaglWwGFSgl0
+
+Together.ai API Key
+key_Ceoc2PhBrxGVdp2TtV3Fk
+
+Cerebras AI API Key
+csk-cyefwnc5rkmwft3jm2c3tv2x993h2em6kyn9fj3fmtm4d3fd
+
+Mistral.ai API Key
+HSNtj1nWxtmcAO7RIRPYfFFhBLuYsPHF
+
+Cohere AI API Key
+GsCdJiViROx2sNRY1PGTeciBpSBb13U6zFpPNqXQ
+
+Firecrawl API Key
+fc-1e63e0dbfbbe42599104e48f80d78192
+
+Tavily API Key
+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
+
+OpenAI API Key (2)
+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
