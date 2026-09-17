@@ -74,6 +74,7 @@ export default defineConfig((config) => {
       },
     },
     server: {
+      allowedHosts: true,
       host: '0.0.0.0',
       port: Number(process.env.PORT) || 5173,
       strictPort: Boolean(process.env.PORT),
