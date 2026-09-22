@@ -1,0 +1,3 @@
+- [Preview import dependencies](preview-import-dependencies.md) — external pnpm apps may need workspace-level firewall-safe overrides before managed preview startup.
+- [Firebase preview auth](firebase-preview-auth.md) — prefer redirect auth for mobile or embedded previews because OAuth popups can close or be blocked.
+- [Imported app API routing](imported-app-api-routing.md) — imported apps that own `/api` must not share the scaffold API service's `/api` route.

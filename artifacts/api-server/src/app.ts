@@ -29,6 +29,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use("/api", router);
+// Keep the scaffold API isolated from imported apps that own the public /api
+// namespace. The artifact router forwards /__api-server without rewriting it.
+app.use("/__api-server", router);
 
 export default app;

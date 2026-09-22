@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Bolt DIY"
+description = "Imported Bolt DIY, an AI-powered full-stack web development environment for generating and editing applications from natural-language prompts."
+version = "1.0.0"
+id = "artifacts/bolt-diy"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22069
+
+[services.development]
+run = "pnpm --filter @workspace/bolt-diy run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/bolt-diy", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/bolt-diy/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22069"
+BASE_PATH = "/"
