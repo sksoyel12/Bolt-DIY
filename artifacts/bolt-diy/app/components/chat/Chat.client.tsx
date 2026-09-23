@@ -176,6 +176,24 @@ export const ChatImpl = memo(
       initialMessages,
       initialInput: Cookies.get(PROMPT_COOKIE_KEY) || '',
     });
+
+    useEffect(() => {
+      const handleApkAnalysis = (event: Event) => {
+        const prompt = (event as CustomEvent<{ prompt?: string }>).detail?.prompt;
+
+        if (!prompt) {
+          return;
+        }
+
+        setInput(prompt);
+        Cookies.set(PROMPT_COOKIE_KEY, prompt, { expires: 1 });
+      };
+
+      window.addEventListener('bolt:apk-analysis', handleApkAnalysis);
+
+      return () => window.removeEventListener('bolt:apk-analysis', handleApkAnalysis);
+    }, [setInput]);
+
     useEffect(() => {
       const prompt = searchParams.get('prompt');
 
