@@ -284,6 +284,18 @@ export function AuthGate({ children }: { children: ReactNode }) {
       }
     };
 
+    const commitAuthenticatedUser = (nextUser: User) => {
+      if (cancelled) {
+        return;
+      }
+
+      resolvedUser = nextUser;
+      setUser(nextUser);
+      setReady(true);
+      updateFirebaseAuthState(nextUser);
+      void persistFirebaseUserSession(nextUser);
+    };
+
     let unsubscribe: () => void = () => undefined;
 
     try {
@@ -293,9 +305,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
         }
 
         if (nextUser) {
-          resolvedUser = nextUser;
-          setUser(nextUser);
-          void persistFirebaseUserSession(nextUser);
+          commitAuthenticatedUser(nextUser);
         } else if (redirectResultResolved && !redirectUser) {
           resolvedUser = null;
           setUser(null);
@@ -318,10 +328,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
         if (result) {
           redirectUser = result.user;
-          resolvedUser = result.user;
-          setUser(result.user);
-          void persistFirebaseUserSession(result.user);
-          setReady(true);
+          commitAuthenticatedUser(result.user);
           navigateToMainChat();
 
           const accessToken = getGithubAccessToken(result);
@@ -361,7 +368,17 @@ export function AuthGate({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  if (ready && user) {
+  useEffect(() => {
+    console.log('[Auth Debug] Current User:', user?.email);
+
+    if (ready && user) {
+      console.log('[Auth Debug] Target View: Mounting Main Workbench & Chat');
+    }
+  }, [ready, user]);
+
+  const isAuthenticated = ready && Boolean(user);
+
+  if (isAuthenticated && user) {
     return <>{children}</>;
   }
 
