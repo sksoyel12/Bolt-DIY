@@ -19,12 +19,12 @@ export function Header() {
       <div className="relative z-50 flex items-center gap-2 text-bolt-elements-textPrimary">
         <button
           type="button"
-          className="relative z-50 cursor-pointer pointer-events-auto flex items-center justify-center p-2 rounded-lg hover:bg-white/10 transition-colors text-bolt-elements-textSecondary hover:text-bolt-elements-textPrimary focus:outline-none focus:ring-2 focus:ring-accent-500"
-          aria-label="Open sidebar"
-          title="Open sidebar"
+          className="relative z-50 cursor-pointer pointer-events-auto flex flex-shrink-0 items-center justify-center p-2 rounded-lg bg-transparent hover:bg-white/10 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
+          aria-label={chat.showSidebar ? 'Close sidebar' : 'Open sidebar'}
+          title={chat.showSidebar ? 'Close sidebar' : 'Open sidebar'}
           onClick={() => chatStore.setKey('showSidebar', !chatStore.get().showSidebar)}
         >
-          <div className="i-ph:sidebar-simple-duotone text-xl" />
+          <div className="i-ph:sidebar-simple text-xl" />
         </button>
         <a href="/" className="text-2xl font-semibold text-accent flex items-center">
           {/* <span className="i-bolt:logo-text?mask w-[46px] inline-block" /> */}
