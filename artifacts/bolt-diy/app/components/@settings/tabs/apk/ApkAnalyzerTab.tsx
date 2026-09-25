@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Button } from '~/components/ui/Button';
 import { Card, CardContent, CardHeader } from '~/components/ui/Card';
+import { extractApkToWorkspace } from '~/lib/services/apkExtraction';
 
 type FindingSeverity = 'high' | 'medium' | 'low' | 'info';
 
@@ -405,6 +406,7 @@ export default function ApkAnalyzerTab() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [fileSearch, setFileSearch] = useState('');
   const [error, setError] = useState('');
+  const [workspacePath, setWorkspacePath] = useState('');
 
   const highRiskCount = useMemo(
     () => report?.findings.filter((finding) => finding.severity === 'high').length ?? 0,
@@ -425,12 +427,15 @@ export default function ApkAnalyzerTab() {
     setReport(null);
     setArchive(null);
     setFileSearch('');
+    setWorkspacePath('');
     setIsAnalyzing(true);
 
     try {
       const result = await analyzeApk(file);
       setReport(result.report);
       setArchive(result.archive);
+      const extraction = await extractApkToWorkspace(file);
+      setWorkspacePath(extraction.rootPath);
     } catch (analysisError) {
       setError(analysisError instanceof Error ? analysisError.message : 'Could not read this APK.');
     } finally {
@@ -543,7 +548,7 @@ export default function ApkAnalyzerTab() {
           <div>
             <h2 className="text-2xl font-semibold text-bolt-elements-textPrimary">APK Analyzer</h2>
             <p className="text-sm text-bolt-elements-textSecondary">
-              Inspect an APK locally in your browser without uploading it.
+               Inspect an APK and unpack its resources, manifest, DEX files, and native libraries into the workspace.
             </p>
           </div>
         </div>
@@ -587,8 +592,9 @@ export default function ApkAnalyzerTab() {
           <div className="space-y-1 text-sm text-bolt-elements-textSecondary">
             <p className="font-medium text-bolt-elements-textPrimary">Privacy-first analysis</p>
             <p>
-              APK bytes stay in this browser tab. The analyzer reads the ZIP container, indexes DEX/native files,
-              extracts readable strings and reports common security indicators.
+               The APK is sent to the protected extraction route, unpacked with size and path limits, and written to a
+               per-APK folder in the workspace. Binary files are preserved; readable manifest XML and a DEX index are
+               also generated for the agent.
             </p>
           </div>
         </CardContent>
@@ -623,6 +629,11 @@ export default function ApkAnalyzerTab() {
 
       {report && (
         <>
+          {workspacePath && (
+            <div className="rounded-lg border border-green-400/30 bg-green-400/10 p-3 text-xs text-green-200">
+              Extracted into <span className="font-mono">{workspacePath}</span>. The agent can inspect these files.
+            </div>
+          )}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {summaryCards.map(({ label, value, Icon }) => (
               <Card key={String(label)} className="bg-bolt-elements-background-depth-2">
