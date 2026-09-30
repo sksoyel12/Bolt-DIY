@@ -795,13 +795,13 @@ export function GitHubDeploymentDialog({ isOpen, onClose, projectName, files }: 
                   </motion.div>
                   <div>
                     <Dialog.Title className="text-lg font-medium text-bolt-elements-textPrimary dark:text-bolt-elements-textPrimary-dark">
-                      Deploy to GitHub
+                      Push to GitHub
                     </Dialog.Title>
                     <p
                       id="push-dialog-description"
                       className="text-sm text-bolt-elements-textSecondary dark:text-bolt-elements-textSecondary-dark"
                     >
-                      Deploy your code to a new or existing GitHub repository
+                      Push your code to a new or existing GitHub repository
                     </p>
                   </div>
                   <Dialog.Close asChild>
@@ -1022,7 +1022,7 @@ export function GitHubDeploymentDialog({ isOpen, onClose, projectName, files }: 
                       ) : (
                         <>
                           <div className="i-ph:github-logo w-4 h-4" />
-                          Deploy to GitHub
+                          Push to GitHub
                         </>
                       )}
                     </motion.button>

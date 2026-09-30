@@ -3,3 +3,4 @@
 - [Imported app API routing](imported-app-api-routing.md) — imported apps that own `/api` must not share the scaffold API service's `/api` route.
 - [AI SDK agent adapters](ai-sdk-agent-adapters.md) — custom v4 language-model adapters need the full v1 shape, including an explicit object-generation mode.
 - [Remix client-module SSR boundary](remix-client-module-ssr.md) — keep .client auth and browser-only code behind ClientOnly with a visible fallback during SSR.
+- [Bolt DIY verification](bolt-diy-verification.md) — the large imported Remix bundle needs extra Node heap for production builds; preview screenshots may capture the SSR fallback before hydration.

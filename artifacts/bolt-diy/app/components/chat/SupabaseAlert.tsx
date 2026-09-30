@@ -27,14 +27,6 @@ export function SupabaseChatAlert({ alert, clearAlert, postMessage }: Props) {
     ? 'Please review the proposed changes and apply them to your database.'
     : 'Please connect to Supabase to continue with this operation.';
 
-  const handleConnectClick = () => {
-    // Dispatch an event to open the Supabase connection dialog
-    document.dispatchEvent(new CustomEvent('open-supabase-connection'));
-  };
-
-  // Determine if we should show the Connect button or Apply Changes button
-  const showConnectButton = !isConnected;
-
   const executeSupabaseAction = async (sql: string) => {
     if (!connection.token || !connection.selectedProjectId) {
       console.error('No Supabase token or project selected');
@@ -114,7 +106,7 @@ export function SupabaseChatAlert({ alert, clearAlert, postMessage }: Props) {
           {!isConnected ? (
             <div className="p-3 rounded-md bg-bolt-elements-background-depth-3">
               <span className="text-sm text-bolt-elements-textPrimary">
-                You must first connect to Supabase and select a project.
+                Connect Supabase from Settings &gt; Connections and select a project before applying database changes.
               </span>
             </div>
           ) : (
@@ -146,21 +138,7 @@ export function SupabaseChatAlert({ alert, clearAlert, postMessage }: Props) {
           <p className="text-sm text-bolt-elements-textSecondary mb-4">{message}</p>
 
           <div className="flex gap-2">
-            {showConnectButton ? (
-              <button
-                onClick={handleConnectClick}
-                className={classNames(
-                  `px-3 py-2 rounded-md text-sm font-medium`,
-                  'bg-[#098F5F]',
-                  'hover:bg-[#0aa06c]',
-                  'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500',
-                  'text-white',
-                  'flex items-center gap-1.5',
-                )}
-              >
-                Connect to Supabase
-              </button>
-            ) : (
+            {isConnected && (
               <button
                 onClick={() => executeSupabaseAction(content)}
                 disabled={isExecuting}
