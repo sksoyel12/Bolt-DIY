@@ -9,7 +9,6 @@ import { SendButton } from './SendButton.client';
 import { IconButton } from '~/components/ui/IconButton';
 import { toast } from 'react-toastify';
 import { SpeechRecognitionButton } from '~/components/chat/SpeechRecognition';
-import { SupabaseConnection } from './SupabaseConnection';
 import { ExpoQrModal } from '~/components/workbench/ExpoQrModal';
 import styles from './BaseChat.module.scss';
 import type { ProviderInfo } from '~/types/model';
@@ -252,8 +251,8 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
             />
           )}
         </ClientOnly>
-        <div className="flex justify-between items-center text-sm p-4 pt-2">
-          <div className="flex gap-1 items-center">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-sm p-4 pt-2">
+          <div className="flex min-w-0 flex-1 flex-wrap gap-1 items-center">
             <ColorSchemeDialog designScheme={props.designScheme} setDesignScheme={props.setDesignScheme} />
             <McpTools />
             <IconButton title="Upload file" className="transition-all" onClick={() => props.handleFileUpload()}>
@@ -282,14 +281,14 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
               onStop={props.stopListening}
               disabled={props.isStreaming}
             />
-            <label className="relative flex items-center">
+            <label className="relative flex w-full min-w-0 items-center sm:w-auto sm:shrink-0">
               <span className="sr-only">Chat mode</span>
               <select
                 value={props.chatMode || 'build'}
                 onChange={(event) => props.setChatMode?.(event.target.value as 'discuss' | 'build' | 'plan')}
                 title="Chat mode"
                 className={classNames(
-                  'h-8 min-w-[7.5rem] appearance-none rounded-md border border-bolt-elements-borderColor',
+                  'h-8 w-full min-w-0 appearance-none rounded-md border border-bolt-elements-borderColor sm:w-auto sm:min-w-[7.5rem]',
                   'bg-bolt-elements-item-backgroundDefault text-bolt-elements-item-contentDefault',
                   'pl-8 pr-7 text-xs font-medium outline-none transition-all',
                   'hover:bg-bolt-elements-item-backgroundAccent hover:text-bolt-elements-item-contentAccent',
@@ -342,7 +341,6 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
               <kbd className="kdb px-1.5 py-0.5 rounded bg-bolt-elements-background-depth-2">Return</kbd> a new line
             </div>
           ) : null}
-          <SupabaseConnection />
           <ExpoQrModal open={props.qrModalOpen} onClose={() => props.setQrModalOpen(false)} />
         </div>
       </div>

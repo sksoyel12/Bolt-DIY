@@ -29,14 +29,23 @@ async function githubBranchesLoader({ request, context }: { request: Request; co
       const body: any = await request.json();
       owner = body.owner;
       repo = body.repo;
-      githubToken = body.token;
+      githubToken = body.token || '';
 
       if (!owner || !repo) {
         return json({ error: 'Owner and repo parameters are required' }, { status: 400 });
       }
 
       if (!githubToken) {
-        return json({ error: 'GitHub token is required' }, { status: 400 });
+        const cookieHeader = request.headers.get('Cookie');
+        const apiKeys = getApiKeysFromCookie(cookieHeader);
+        githubToken =
+          apiKeys.GITHUB_API_KEY ||
+          apiKeys.VITE_GITHUB_ACCESS_TOKEN ||
+          context?.cloudflare?.env?.GITHUB_TOKEN ||
+          context?.cloudflare?.env?.VITE_GITHUB_ACCESS_TOKEN ||
+          process.env.GITHUB_TOKEN ||
+          process.env.VITE_GITHUB_ACCESS_TOKEN ||
+          '';
       }
     } else {
       // Handle GET request with params and cookie token (backwards compatibility)
@@ -63,15 +72,11 @@ async function githubBranchesLoader({ request, context }: { request: Request; co
         '';
     }
 
-    if (!githubToken) {
-      return json({ error: 'GitHub token not found' }, { status: 401 });
-    }
-
     // First, get repository info to know the default branch
     const repoResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
       headers: {
         Accept: 'application/vnd.github.v3+json',
-        Authorization: `Bearer ${githubToken}`,
+        ...(githubToken ? { Authorization: `Bearer ${githubToken}` } : {}),
         'User-Agent': 'bolt.diy-app',
       },
     });
@@ -95,7 +100,7 @@ async function githubBranchesLoader({ request, context }: { request: Request; co
     const branchesResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/branches?per_page=100`, {
       headers: {
         Accept: 'application/vnd.github.v3+json',
-        Authorization: `Bearer ${githubToken}`,
+        ...(githubToken ? { Authorization: `Bearer ${githubToken}` } : {}),
         'User-Agent': 'bolt.diy-app',
       },
     });

@@ -3,7 +3,7 @@ import { useGit } from '~/lib/hooks/useGit';
 import type { Message } from 'ai';
 import { detectProjectCommands, createCommandsMessage, escapeBoltTags } from '~/utils/projectCommands';
 import { generateId } from '~/utils/fileUtils';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { LoadingOverlay } from '~/components/ui/LoadingOverlay';
 
@@ -15,6 +15,7 @@ import { X, Github, GitBranch } from 'lucide-react';
 // Import the new repository selector components
 import { GitHubRepositorySelector } from '~/components/@settings/tabs/github/components/GitHubRepositorySelector';
 import { GitLabRepositorySelector } from '~/components/@settings/tabs/gitlab/components/GitLabRepositorySelector';
+import { useGitHubConnection } from '~/lib/hooks/useGitHubConnection';
 
 const IGNORE_PATTERNS = [
   'node_modules/**',
@@ -41,6 +42,7 @@ const ig = ignore().add(IGNORE_PATTERNS);
 
 const MAX_FILE_SIZE = 100 * 1024; // 100KB limit per file
 const MAX_TOTAL_SIZE = 500 * 1024; // 500KB total limit
+const PENDING_GITHUB_IMPORT_KEY = 'bolt:pending-github-import';
 
 interface GitCloneButtonProps {
   className?: string;
@@ -49,14 +51,29 @@ interface GitCloneButtonProps {
 
 export default function GitCloneButton({ importChat, className }: GitCloneButtonProps) {
   const { gitClone } = useGit();
+  const { isConnected } = useGitHubConnection();
   const [loading, setLoading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<'github' | 'gitlab' | null>(null);
 
+  /*
+   * A mobile GitHub sign-in uses a full-page redirect. Preserve the user's
+   * intent so the repository picker is restored after Firebase returns.
+   */
+  useEffect(() => {
+    if (!isConnected || typeof window === 'undefined') {
+      return;
+    }
+
+    if (sessionStorage.getItem(PENDING_GITHUB_IMPORT_KEY) === 'true') {
+      sessionStorage.removeItem(PENDING_GITHUB_IMPORT_KEY);
+      setSelectedProvider('github');
+      setIsDialogOpen(true);
+    }
+  }, [isConnected]);
+
   const handleClone = async (repoUrl: string, branch?: string) => {
     setLoading(true);
-    setIsDialogOpen(false);
-    setSelectedProvider(null);
 
     try {
       const cloneUrl = branch ? `${repoUrl.split('#')[0]}#${branch}` : repoUrl;
@@ -155,6 +172,9 @@ ${escapeBoltTags(file.content)}
           messages,
         );
       }
+
+      setIsDialogOpen(false);
+      setSelectedProvider(null);
     } catch (error) {
       console.error('Error during import:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to import repository');
@@ -210,7 +230,12 @@ ${escapeBoltTags(file.content)}
 
               <div className="space-y-3">
                 <button
-                  onClick={() => setSelectedProvider('github')}
+                  onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      sessionStorage.setItem(PENDING_GITHUB_IMPORT_KEY, 'true');
+                    }
+                    setSelectedProvider('github');
+                  }}
                   className="w-full p-4 rounded-lg bg-bolt-elements-background-depth-1 dark:bg-bolt-elements-background-depth-1 hover:bg-bolt-elements-background-depth-2 dark:hover:bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor dark:border-bolt-elements-borderColor hover:border-bolt-elements-borderColorActive dark:hover:border-bolt-elements-borderColorActive transition-all duration-200 text-left group"
                 >
                   <div className="flex items-center gap-3">

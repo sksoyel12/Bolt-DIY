@@ -339,7 +339,15 @@ export const Menu = () => {
         )}
       >
         <div className="h-12 flex items-center justify-between px-4 border-b border-gray-100 dark:border-gray-800/50 bg-gray-50/50 dark:bg-gray-900/50 rounded-tr-2xl">
-          <div className="text-gray-900 dark:text-white font-medium"></div>
+          <button
+            type="button"
+            onClick={() => chatStore.setKey('showSidebar', false)}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-600 transition-colors hover:bg-gray-200 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500/50 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white"
+            aria-label="Close sidebar"
+            title="Close sidebar"
+          >
+            <span className="i-ph:x text-lg" aria-hidden="true" />
+          </button>
           <div className="flex items-center gap-3">
             <HelpButton onClick={() => window.open('https://stackblitz-labs.github.io/bolt.diy/', '_blank')} />
             <span className="font-medium text-sm text-gray-900 dark:text-white truncate">

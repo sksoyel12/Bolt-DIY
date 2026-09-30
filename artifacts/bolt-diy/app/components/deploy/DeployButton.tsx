@@ -211,7 +211,7 @@ export const DeployButton = ({
                 src="https://cdn.simpleicons.org/github"
                 alt="github"
               />
-              <span className="mx-auto">Deploy to GitHub</span>
+              <span className="mx-auto">Push code to GitHub</span>
             </DropdownMenu.Item>
 
             <DropdownMenu.Item
