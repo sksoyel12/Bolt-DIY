@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { SiGithub, SiGoogle } from 'react-icons/si';
 import { FiMail, FiUser } from 'react-icons/fi';
+import { toast } from 'react-toastify';
 import type { User } from 'firebase/auth';
 import {
   clearCachedFirebaseUser,
@@ -385,6 +386,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
         if (result) {
           redirectUser = result.user;
+          const wasGithubRedirect = pendingRedirectProvider === 'GitHub';
           pendingRedirectProvider = null;
           clearPendingFirebaseRedirectProvider();
           commitAuthenticatedUser(result.user);
@@ -393,7 +395,12 @@ export function AuthGate({ children }: { children: ReactNode }) {
           const accessToken = getGithubAccessToken(result);
 
           if (accessToken) {
-            void connectGitHubWithOAuthToken(accessToken).catch(() => undefined);
+            void connectGitHubWithOAuthToken(accessToken).catch((error) => {
+              logFirebaseAuthError('GitHub account connection', error);
+              toast.error(`Firebase sign-in succeeded, but GitHub could not be connected: ${friendlyAuthError(error)}`);
+            });
+          } else if (wasGithubRedirect) {
+            toast.error('Firebase sign-in succeeded, but GitHub did not return repository access. Please reconnect.');
           }
         } else if (!resolvedUser) {
           clearCachedFirebaseUser();

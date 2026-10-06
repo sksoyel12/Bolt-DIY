@@ -8,6 +8,15 @@ import { toast } from 'react-toastify';
 
 const lookupSavedPassword = (url: string) => {
   const domain = url.split('/')[2];
+
+  if (domain === 'github.com') {
+    const githubToken = Cookies.get('githubToken');
+
+    if (githubToken) {
+      return { username: githubToken, password: 'x-oauth-basic' };
+    }
+  }
+
   const gitCreds = Cookies.get(`git:${domain}`);
 
   if (!gitCreds) {

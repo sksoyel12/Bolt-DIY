@@ -1,5 +1,5 @@
 import { json } from '@remix-run/cloudflare';
-import { getApiKeysFromCookie } from '~/lib/api/cookies';
+import { getApiKeysFromCookie, parseCookies } from '~/lib/api/cookies';
 import { withSecurity } from '~/lib/security';
 
 async function githubUserLoader({ request, context }: { request: Request; context: any }) {
@@ -7,11 +7,13 @@ async function githubUserLoader({ request, context }: { request: Request; contex
     // Get API keys from cookies (server-side only)
     const cookieHeader = request.headers.get('Cookie');
     const apiKeys = getApiKeysFromCookie(cookieHeader);
+    const githubOAuthToken = parseCookies(cookieHeader).githubToken;
 
     // Try to get GitHub token from various sources
     const githubToken =
       apiKeys.GITHUB_API_KEY ||
       apiKeys.VITE_GITHUB_ACCESS_TOKEN ||
+      githubOAuthToken ||
       context?.cloudflare?.env?.GITHUB_TOKEN ||
       context?.cloudflare?.env?.VITE_GITHUB_ACCESS_TOKEN ||
       process.env.GITHUB_TOKEN ||
@@ -97,11 +99,13 @@ async function githubUserAction({ request, context }: { request: Request; contex
     // Get API keys from cookies (server-side only)
     const cookieHeader = request.headers.get('Cookie');
     const apiKeys = getApiKeysFromCookie(cookieHeader);
+    const githubOAuthToken = parseCookies(cookieHeader).githubToken;
 
     // Try to get GitHub token from various sources
     const githubToken =
       apiKeys.GITHUB_API_KEY ||
       apiKeys.VITE_GITHUB_ACCESS_TOKEN ||
+      githubOAuthToken ||
       context?.cloudflare?.env?.GITHUB_TOKEN ||
       context?.cloudflare?.env?.VITE_GITHUB_ACCESS_TOKEN ||
       process.env.GITHUB_TOKEN ||
@@ -271,12 +275,15 @@ async function githubUserAction({ request, context }: { request: Request; contex
     return json({ error: 'Invalid action' }, { status: 400 });
   } catch (error) {
     console.error('Error in GitHub user action:', error);
+    const details = error instanceof Error ? error.message : String(error);
+    const unauthorized = details.includes('GitHub API error: 401');
+
     return json(
       {
-        error: 'Failed to process GitHub request',
-        details: error instanceof Error ? error.message : String(error),
+        error: unauthorized ? 'Invalid GitHub token' : 'Failed to process GitHub request',
+        details,
       },
-      { status: 500 },
+      { status: unauthorized ? 401 : 500 },
     );
   }
 }

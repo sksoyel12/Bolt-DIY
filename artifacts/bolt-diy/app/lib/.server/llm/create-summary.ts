@@ -3,7 +3,6 @@ import type { IProviderSetting } from '~/types/model';
 import { DEFAULT_MODEL, DEFAULT_PROVIDER, PROVIDER_LIST } from '~/utils/constants';
 import { extractCurrentContext, extractPropertiesFromMessage, simplifyBoltActions } from './utils';
 import { createScopedLogger } from '~/utils/logger';
-import { LLMManager } from '~/lib/modules/llm/manager';
 
 const logger = createScopedLogger('create-summary');
 
@@ -69,6 +68,8 @@ ${summary.summary}`;
     Array.isArray(message.content)
       ? (message.content.find((item) => item.type === 'text')?.text as string) || ''
       : message.content;
+
+  const provider = PROVIDER_LIST.find((candidate) => candidate.name === currentProvider) || DEFAULT_PROVIDER;
 
   // select files from the list of code file from the project that might be useful for the current request from the user
   const resp = await generateText({

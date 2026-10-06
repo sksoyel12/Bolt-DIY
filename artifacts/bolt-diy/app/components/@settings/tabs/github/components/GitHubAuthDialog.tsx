@@ -33,7 +33,24 @@ export function GitHubAuthDialog({ isOpen, onClose, onSuccess }: GitHubAuthDialo
         return;
       }
 
-      const result = await signInWithGithub();
+      let result: Awaited<ReturnType<typeof signInWithGithub>>;
+
+      try {
+        result = await signInWithGithub();
+      } catch (popupError) {
+        const popupErrorCode = getFirebaseAuthErrorCode(popupError);
+
+        if (
+          popupErrorCode === 'auth/popup-blocked' ||
+          popupErrorCode === 'auth/operation-not-supported-in-this-environment'
+        ) {
+          await signInWithGithubRedirect();
+          return;
+        }
+
+        throw popupError;
+      }
+
       const accessToken = getGithubAccessToken(result);
 
       if (!accessToken) {
@@ -49,7 +66,12 @@ export function GitHubAuthDialog({ isOpen, onClose, onSuccess }: GitHubAuthDialo
       if (errorCode === 'auth/popup-closed-by-user') {
         setError('GitHub sign-in was cancelled.');
       } else if (errorCode === 'auth/popup-blocked') {
-        setError('Your browser blocked the GitHub sign-in window. Allow pop-ups and try again.');
+        setError('Your browser blocked the sign-in window. Please try again.');
+      } else if (errorCode === 'auth/unauthorized-domain') {
+        const hostname = typeof window === 'undefined' ? 'this domain' : window.location.hostname;
+        setError(
+          `Firebase does not authorize ${hostname}. Add this domain under Firebase Authentication → Settings → Authorized domains.`,
+        );
       } else {
         setError(connectError instanceof Error ? connectError.message : 'GitHub sign-in failed');
       }
