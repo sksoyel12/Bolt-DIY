@@ -5,8 +5,8 @@ info:
   version: 0.1.0
   description: API specification
 servers:
-  - url: /api
-    description: Base API path
+  - url: /workspace-api
+    description: Workspace API path
 tags:
   - name: health
     description: Health operations
