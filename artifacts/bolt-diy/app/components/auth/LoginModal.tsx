@@ -182,9 +182,14 @@ export function LoginModal({ initialError = '' }: { initialError?: string }) {
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-md">
         <div className="w-full max-w-md rounded-2xl border border-white/10 bg-black/70 p-7 text-white shadow-2xl">
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-violet-300">Bolt DIY</p>
-          <h1 className="text-2xl font-semibold">Firebase sign-in needs configuration</h1>
+          <h1 className="text-2xl font-semibold">Connect your Firebase project</h1>
           <p className="mt-3 text-sm leading-6 text-white/60">
-            Add the VITE_FIREBASE_* values for your Firebase web app to enable Google and GitHub access.
+            Add your Firebase web app’s API key, auth domain, project ID, and app ID to this Repl.
+          </p>
+          <p className="mt-3 text-sm leading-6 text-white/60">
+            In Firebase Console, enable Email/Password, Google, and GitHub sign-in, then add{' '}
+            <span className="break-all text-violet-200">{currentAuthHost()}</span> under Authentication → Settings →
+            Authorized domains. Enable Anonymous if you want Guest sign-in.
           </p>
         </div>
       </div>

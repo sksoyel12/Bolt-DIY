@@ -19,21 +19,16 @@ import {
 } from 'firebase/auth';
 
 const firebaseConfig = {
-  /*
-   * Firebase web configuration is public client configuration. Keep the
-   * environment overrides for deployments, but include the project defaults
-   * so a copied project does not lose its sign-in setup.
-   */
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyBsBGxWbL6DIgMlND3eUAVNRHsBH4VKquo',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'v-cloud-storage.firebaseapp.com',
-  databaseURL:
-    import.meta.env.VITE_FIREBASE_DATABASE_URL ||
-    'https://v-cloud-storage-default-rtdb.asia-southeast1.firebasedatabase.app',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'v-cloud-storage',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'v-cloud-storage.firebasestorage.app',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '367814757584',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:367814757584:web:83848f9cbbf07006a1a2d5',
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || 'G-KXZ5S9V004',
+  // Use only this deployment's Firebase web app config; never inherit the
+  // upstream repository owner's Firebase project when the repo is copied.
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 export const firebaseAuthConfigured = Boolean(
