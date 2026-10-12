@@ -19,16 +19,16 @@ import {
 } from 'firebase/auth';
 
 const firebaseConfig = {
-  // Use only this deployment's Firebase web app config; never inherit the
-  // upstream repository owner's Firebase project when the repo is copied.
+  // Firebase project settings supplied for this app. Keep the web API key
+  // separate because it is intentionally public in the browser bundle.
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+  authDomain: 'v-cloud-storage.firebaseapp.com',
+  databaseURL: 'https://v-cloud-storage-default-rtdb.asia-southeast1.firebasedatabase.app',
+  projectId: 'v-cloud-storage',
+  storageBucket: 'v-cloud-storage.firebasestorage.app',
+  messagingSenderId: '367814757584',
+  appId: '1:367814757584:web:83848f9cbbf07006a1a2d5',
+  measurementId: 'G-KXZ5S9V004',
 };
 
 export const firebaseAuthConfigured = Boolean(

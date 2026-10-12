@@ -184,7 +184,7 @@ export function LoginModal({ initialError = '' }: { initialError?: string }) {
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-violet-300">Bolt DIY</p>
           <h1 className="text-2xl font-semibold">Connect your Firebase project</h1>
           <p className="mt-3 text-sm leading-6 text-white/60">
-            Add your Firebase web app’s API key, auth domain, project ID, and app ID to this Repl.
+            Add the public Firebase Web API key as VITE_FIREBASE_API_KEY to activate sign-in for v-cloud-storage.
           </p>
           <p className="mt-3 text-sm leading-6 text-white/60">
             In Firebase Console, enable Email/Password, Google, and GitHub sign-in, then add{' '}
