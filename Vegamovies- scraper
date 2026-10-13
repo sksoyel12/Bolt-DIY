@@ -1,0 +1,479 @@
+import puppeteer, { Browser, Page, HTTPResponse } from 'puppeteer';
+import * as fs from 'fs';
+
+export interface VegamoviesScraperOptions {
+  /** The Vegamovies post URL or direct landing URL */
+  url: string;
+  /** Preferred quality filter: '480p' | '720p' | '1080p' | '4k' | 'all' (default: 'all' or highest) */
+  preferredQuality?: '480p' | '720p' | '1080p' | '2160p' | '4k' | 'all';
+  /** Preferred server target: 'vcloud' | 'fastcloud' | 'hubcloud' | 'direct' | 'any' */
+  preferredServer?: 'vcloud' | 'fastcloud' | 'hubcloud' | 'direct' | 'gdrive' | 'any';
+  /** Total operation timeout in ms (default: 45000) */
+  timeout?: number;
+  /** Custom User Agent (default: latest Chrome Windows) */
+  userAgent?: string;
+  /** Max depth of redirect/landing pages to resolve (default: 3) */
+  maxRedirectHops?: number;
+}
+
+export interface ExtractedQualityOption {
+  quality: string;
+  text: string;
+  landingUrl: string;
+  serverType?: string;
+  size?: string;
+}
+
+export interface VegamoviesScrapeResult {
+  success: boolean;
+  videoUrl?: string;
+  downloadUrl?: string;
+  streamingUrl?: string;
+  title?: string;
+  poster?: string;
+  selectedQuality?: string;
+  availableQualities?: ExtractedQualityOption[];
+  executionTimeMs: number;
+  stepsLog: string[];
+  redirectHistory: Array<{ from: string; to: string; status?: number }>;
+  allCapturedMedia?: string[];
+  error?: string;
+}
+
+const DEFAULT_USER_AGENT =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+
+function getChromiumExecutablePath(): string | undefined {
+  const possiblePaths = [
+    process.env.PUPPETEER_EXECUTABLE_PATH,
+    process.env.CHROME_BIN,
+    process.env.CHROME_PATH,
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+    '/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable',
+  ];
+
+  for (const p of possiblePaths) {
+    if (p && fs.existsSync(p)) {
+      return p;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Robust Scraper & Link Resolver specifically designed for Vegamovies & Cloud landing hosts (V-Cloud, HubCloud, VGList, FastCloud, etc.)
+ */
+export async function scrapeVegamoviesPost(options: VegamoviesScraperOptions): Promise<VegamoviesScrapeResult> {
+  const startTime = Date.now();
+  const {
+    url,
+    preferredQuality = 'all',
+    preferredServer = 'any',
+    timeout = 45000,
+    userAgent = DEFAULT_USER_AGENT,
+    maxRedirectHops = 4,
+  } = options;
+
+  const stepsLog: string[] = [];
+  const redirectHistory: Array<{ from: string; to: string; status?: number }> = [];
+  const capturedMediaUrls = new Set<string>();
+
+  const logStep = (msg: string) => {
+    const timestamp = new Date().toISOString().substring(11, 19);
+    const line = `[${timestamp}] ${msg}`;
+    stepsLog.push(line);
+    console.log(`[Vegamovies Automation] ${line}`);
+  };
+
+  if (!url || typeof url !== 'string' || !url.startsWith('http')) {
+    return {
+      success: false,
+      executionTimeMs: Date.now() - startTime,
+      stepsLog: ['Error: Invalid target URL provided'],
+      redirectHistory: [],
+      error: 'A valid http/https URL is required.',
+    };
+  }
+
+  let browser: Browser | null = null;
+  let page: Page | null = null;
+
+  try {
+    logStep(`Launching headless Chromium engine...`);
+    const execPath = getChromiumExecutablePath();
+    browser = await puppeteer.launch({
+      headless: true,
+      executablePath: execPath,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--mute-audio',
+        '--disable-notifications',
+        '--disable-web-security',
+        '--window-size=1920,1080',
+      ],
+      defaultViewport: { width: 1920, height: 1080 },
+    });
+
+    page = await browser.newPage();
+    await page.setUserAgent(userAgent);
+    await page.setExtraHTTPHeaders({
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+    });
+
+    // Intercept network responses to capture direct streaming/download tokens
+    page.on('response', (response: HTTPResponse) => {
+      try {
+        const resUrl = response.url();
+        const headers = response.headers();
+        const contentType = (headers['content-type'] || '').toLowerCase();
+        const contentDisposition = (headers['content-disposition'] || '').toLowerCase();
+
+        const isMediaStream =
+          contentType.includes('video/') ||
+          contentType.includes('application/x-mpegurl') ||
+          contentType.includes('application/vnd.apple.mpegurl') ||
+          resUrl.includes('.m3u8') ||
+          resUrl.includes('.mp4') ||
+          resUrl.includes('.mkv') ||
+          resUrl.includes('.webm') ||
+          resUrl.includes('videoplayback') ||
+          resUrl.includes('/stream/') ||
+          resUrl.includes('/download/') ||
+          contentDisposition.includes('attachment');
+
+        if (isMediaStream && resUrl.startsWith('http')) {
+          capturedMediaUrls.add(resUrl);
+        }
+      } catch {}
+    });
+
+    // Intercept new window popups / target="_blank"
+    page.on('popup', async (popup) => {
+      try {
+        if (popup) {
+          const popupUrl = popup.url();
+          logStep(`Handled popup window: ${popupUrl}`);
+          redirectHistory.push({ from: page?.url() || '', to: popupUrl, status: 200 });
+        }
+      } catch {}
+    });
+
+    logStep(`Step 1: Navigating to initial post page: ${url}`);
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: Math.min(timeout, 20000) });
+
+    const postInfo = await page.evaluate(() => {
+      const title = document.querySelector('h1.entry-title, h1, .title')?.textContent?.trim() || document.title || '';
+      const poster =
+        document.querySelector('.entry-content img, .post-thumbnail img, article img')?.getAttribute('src') || '';
+      return { title, poster };
+    });
+
+    logStep(`Parsed Title: "${postInfo.title.substring(0, 60)}..."`);
+
+    // Check if initial page is already an intermediate or cloud landing page
+    const currentHost = new URL(page.url()).hostname.toLowerCase();
+    const isDirectLanding =
+      currentHost.includes('vcloud') ||
+      currentHost.includes('hubcloud') ||
+      currentHost.includes('vglist') ||
+      currentHost.includes('fastcloud') ||
+      currentHost.includes('gdflix');
+
+    let targetLandingUrl = url;
+    let extractedQualities: ExtractedQualityOption[] = [];
+
+    if (!isDirectLanding) {
+      logStep(`Step 1b: Scanning post page for download/cloud buttons (480p, 720p, 1080p, 4K, V-Cloud, Direct Instant)...`);
+
+      // Extract all download anchors and buttons from post
+      extractedQualities = await page.evaluate(() => {
+        const results: Array<{ quality: string; text: string; landingUrl: string; serverType?: string; size?: string }> = [];
+        const anchors = Array.from(document.querySelectorAll('a[href]'));
+
+        for (const a of anchors) {
+          const href = a.getAttribute('href') || '';
+          const text = (a.textContent || '').trim();
+          const parentText = a.parentElement?.textContent || '';
+          const combinedText = `${text} ${parentText}`.toLowerCase();
+
+          if (!href || href.startsWith('#') || href.startsWith('javascript:')) continue;
+
+          const isDownloadBtn =
+            combinedText.includes('download') ||
+            combinedText.includes('v-cloud') ||
+            combinedText.includes('vcloud') ||
+            combinedText.includes('fastcloud') ||
+            combinedText.includes('hubcloud') ||
+            combinedText.includes('g-drive') ||
+            combinedText.includes('gdrive') ||
+            combinedText.includes('direct') ||
+            combinedText.includes('instant') ||
+            combinedText.includes('480p') ||
+            combinedText.includes('720p') ||
+            combinedText.includes('1080p') ||
+            combinedText.includes('2160p') ||
+            combinedText.includes('4k') ||
+            href.includes('vglist') ||
+            href.includes('vcloud') ||
+            href.includes('hubcloud') ||
+            href.includes('fastcloud') ||
+            href.includes('gdflix');
+
+          if (isDownloadBtn && href.startsWith('http')) {
+            let quality = '720p';
+            if (combinedText.includes('4k') || combinedText.includes('2160p')) quality = '4K';
+            else if (combinedText.includes('1080p')) quality = '1080p';
+            else if (combinedText.includes('720p')) quality = '720p';
+            else if (combinedText.includes('480p')) quality = '480p';
+
+            let serverType = 'Direct';
+            if (combinedText.includes('v-cloud') || combinedText.includes('vcloud') || href.includes('vcloud')) serverType = 'V-Cloud';
+            else if (combinedText.includes('hubcloud') || href.includes('hubcloud')) serverType = 'HubCloud';
+            else if (combinedText.includes('fastcloud') || href.includes('fastcloud')) serverType = 'FastCloud';
+            else if (combinedText.includes('gdrive') || combinedText.includes('g-drive')) serverType = 'G-Drive';
+
+            // Check for file size hint (e.g., [1.2 GB])
+            const sizeMatch = combinedText.match(/(\d+(\.\d+)?\s*(gb|mb))/i);
+            const size = sizeMatch ? sizeMatch[0].toUpperCase() : undefined;
+
+            results.push({
+              quality,
+              text: text || 'Download Link',
+              landingUrl: href,
+              serverType,
+              size,
+            });
+          }
+        }
+        return results;
+      });
+
+      logStep(`Found ${extractedQualities.length} potential download/server buttons on page`);
+
+      if (extractedQualities.length > 0) {
+        // Select best matching quality & server
+        let selectedOption = extractedQualities[0];
+
+        if (preferredQuality !== 'all') {
+          const matchQuality = extractedQualities.find((q) => q.quality.toLowerCase() === preferredQuality.toLowerCase());
+          if (matchQuality) selectedOption = matchQuality;
+        }
+
+        if (preferredServer !== 'any') {
+          const matchServer = extractedQualities.find(
+            (q) => (q.serverType || '').toLowerCase().includes(preferredServer.toLowerCase())
+          );
+          if (matchServer) selectedOption = matchServer;
+        }
+
+        targetLandingUrl = selectedOption.landingUrl;
+        logStep(`Selected best target button: [${selectedOption.quality}] ${selectedOption.serverType || ''} -> ${targetLandingUrl}`);
+      }
+    }
+
+    // Step 2 & 3: Navigate intermediate landing pages & solve countdown timers
+    let currentUrl = targetLandingUrl;
+    let hops = 0;
+    let finalVideoUrl = '';
+
+    while (hops < maxRedirectHops) {
+      hops++;
+      logStep(`Step 2 (Hop ${hops}): Navigating to intermediate landing host: ${currentUrl}`);
+
+      redirectHistory.push({ from: page.url(), to: currentUrl });
+      await page.goto(currentUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
+
+      // Check if page contains countdown timer (e.g., 5-10s timer)
+      logStep(`Step 3: Checking for countdown timers & dynamic verification buttons...`);
+
+      // Wait up to 12 seconds dynamically checking timer elements or auto-redirects
+      const timerWaitStart = Date.now();
+      let timerResolved = false;
+
+      while (Date.now() - timerWaitStart < 12000) {
+        const timerState = await page.evaluate(() => {
+          const bodyText = document.body?.innerText || '';
+          const timerEl = document.querySelector(
+            '#timer, .countdown, #countdown, .timer, [id*="timer"], [class*="timer"], [id*="count"]'
+          );
+          const timerVal = timerEl?.textContent?.trim() || '';
+
+          // Look for action buttons
+          const buttons = Array.from(document.querySelectorAll('a, button, input[type="button"], input[type="submit"]'));
+          const actionBtn = buttons.find((btn) => {
+            const txt = (btn.textContent || (btn as HTMLInputElement).value || '').toLowerCase();
+            return (
+              txt.includes('download now') ||
+              txt.includes('generate link') ||
+              txt.includes('get link') ||
+              txt.includes('direct download') ||
+              txt.includes('fast cloud') ||
+              txt.includes('instant download') ||
+              txt.includes('proceed to download') ||
+              txt.includes('continue to file') ||
+              txt.includes('verify')
+            );
+          });
+
+          return {
+            hasTimer: !!timerEl,
+            timerText: timerVal,
+            hasActionBtn: !!actionBtn,
+            actionBtnText: actionBtn ? actionBtn.textContent?.trim() : null,
+            bodySnippet: bodyText.substring(0, 200),
+          };
+        });
+
+        if (timerState.hasActionBtn) {
+          logStep(`Timer resolved / Action button ready: "${timerState.actionBtnText || 'Download Now'}"`);
+          timerResolved = true;
+          break;
+        }
+
+        // Wait 1.5s per poll
+        await new Promise((r) => setTimeout(r, 1500));
+      }
+
+      // Step 3b: Click the action / download generation button
+      logStep(`Attempting to click download / generate button...`);
+      const clickedNext = await page.evaluate(() => {
+        const buttons = Array.from(document.querySelectorAll('a, button, input[type="button"], input[type="submit"]'));
+        for (const btn of buttons) {
+          const txt = (btn.textContent || (btn as HTMLInputElement).value || '').toLowerCase();
+          const href = (btn as HTMLAnchorElement).href || '';
+
+          if (
+            txt.includes('download now') ||
+            txt.includes('generate link') ||
+            txt.includes('get link') ||
+            txt.includes('direct download') ||
+            txt.includes('fast cloud') ||
+            txt.includes('instant download') ||
+            txt.includes('v-cloud') ||
+            txt.includes('hubcloud') ||
+            href.includes('download') ||
+            href.includes('stream')
+          ) {
+            if (href && href.startsWith('http') && !href.includes(window.location.host)) {
+              return { success: true, nextUrl: href, clicked: false };
+            }
+            (btn as HTMLElement).click();
+            return { success: true, nextUrl: href || null, clicked: true };
+          }
+        }
+        return { success: false, nextUrl: null, clicked: false };
+      });
+
+      // Wait a short buffer for network responses or redirects
+      await new Promise((r) => setTimeout(r, 2500));
+
+      // Check if network captured direct video URL
+      if (capturedMediaUrls.size > 0) {
+        finalVideoUrl = Array.from(capturedMediaUrls)[capturedMediaUrls.size - 1];
+        logStep(`Step 4: Intercepted direct media stream from network traffic: ${finalVideoUrl}`);
+        break;
+      }
+
+      // Check DOM for final stream/download links or video tag
+      const domExtraction = await page.evaluate(() => {
+        const video = document.querySelector('video source, video') as HTMLMediaElement;
+        if (video && video.src && video.src.startsWith('http')) {
+          return { found: true, url: video.src, type: 'video_element' };
+        }
+
+        const directAnchor = Array.from(document.querySelectorAll('a[href]')).find((a) => {
+          const href = a.getAttribute('href') || '';
+          const txt = (a.textContent || '').toLowerCase();
+          return (
+            href.endsWith('.mp4') ||
+            href.endsWith('.mkv') ||
+            href.endsWith('.m3u8') ||
+            href.includes('/download/') ||
+            href.includes('videoplayback') ||
+            txt.includes('direct download') ||
+            txt.includes('instant download')
+          );
+        });
+
+        if (directAnchor) {
+          return { found: true, url: (directAnchor as HTMLAnchorElement).href, type: 'direct_link' };
+        }
+
+        return { found: false, url: null, type: null };
+      });
+
+      if (domExtraction.found && domExtraction.url) {
+        finalVideoUrl = domExtraction.url;
+        logStep(`Step 4: Found direct video link in page DOM: ${finalVideoUrl}`);
+        break;
+      }
+
+      // If clickedNext gave a distinct foreign destination URL, advance to next hop
+      if (clickedNext.nextUrl && clickedNext.nextUrl !== currentUrl && clickedNext.nextUrl.startsWith('http')) {
+        currentUrl = clickedNext.nextUrl;
+      } else {
+        // Check if page navigated or changed URL
+        const newPageUrl = page.url();
+        if (newPageUrl !== currentUrl) {
+          currentUrl = newPageUrl;
+        } else {
+          // No further hops detected
+          break;
+        }
+      }
+    }
+
+    // Fallback if no final video URL was captured directly
+    if (!finalVideoUrl && capturedMediaUrls.size > 0) {
+      finalVideoUrl = Array.from(capturedMediaUrls)[0];
+    } else if (!finalVideoUrl && currentUrl.startsWith('http')) {
+      finalVideoUrl = currentUrl;
+    }
+
+    const success = !!finalVideoUrl && finalVideoUrl.startsWith('http');
+    logStep(`Extraction complete. Success: ${success}, Final Video URL: ${finalVideoUrl || 'None'}`);
+
+    return {
+      success,
+      videoUrl: finalVideoUrl || undefined,
+      downloadUrl: finalVideoUrl || undefined,
+      streamingUrl: finalVideoUrl || undefined,
+      title: postInfo.title,
+      poster: postInfo.poster || undefined,
+      selectedQuality: extractedQualities.length > 0 ? extractedQualities[0].quality : undefined,
+      availableQualities: extractedQualities,
+      executionTimeMs: Date.now() - startTime,
+      stepsLog,
+      redirectHistory,
+      allCapturedMedia: Array.from(capturedMediaUrls),
+    };
+  } catch (err: any) {
+    logStep(`Fatal error during extraction: ${err.message}`);
+    return {
+      success: false,
+      error: err.message || 'Scraper execution encountered an unexpected error',
+      executionTimeMs: Date.now() - startTime,
+      stepsLog,
+      redirectHistory,
+      allCapturedMedia: Array.from(capturedMediaUrls),
+    };
+  } finally {
+    // Guaranteed cleanup
+    if (page) {
+      try {
+        await page.close();
+      } catch {}
+    }
+    if (browser) {
+      try {
+        await browser.close();
+      } catch {}
+    }
+  }
+}
