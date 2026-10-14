@@ -12,8 +12,8 @@
   },
   "scripts": {
     "deploy": "npm run build && wrangler pages deploy",
-    "build": "remix vite:build",
-    "dev": "node pre-start.cjs  && remix vite:dev",
+    "build": "node ./node_modules/@remix-run/dev/dist/cli.js vite:build",
+    "dev": "node pre-start.cjs && node ./node_modules/@remix-run/dev/dist/cli.js vite:dev --host 0.0.0.0 --port 3000",
     "test": "vitest --run",
     "test:watch": "vitest",
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint app",
@@ -96,8 +96,6 @@
     "@radix-ui/react-switch": "^1.1.1",
     "@radix-ui/react-tabs": "^1.1.2",
     "@radix-ui/react-tooltip": "^1.1.4",
-    "@remix-run/cloudflare": "^2.15.2",
-    "@remix-run/cloudflare-pages": "^2.15.2",
     "@remix-run/node": "^2.15.2",
     "@remix-run/react": "^2.15.2",
     "@tanstack/react-virtual": "^3.13.0",
@@ -211,8 +209,7 @@
     "vitest": "^5.0.1",
     "wrangler": "^4.44.0"
   },
-  "resolutions": {
+  "overrides": {
     "@typescript-eslint/utils": "^8.0.0-alpha.30"
-  },
-  "packageManager": "pnpm@9.14.4"
+  }
 }

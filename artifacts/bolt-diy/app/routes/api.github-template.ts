@@ -1,4 +1,4 @@
-import { json } from '@remix-run/cloudflare';
+import { json } from '@remix-run/node';
 import JSZip from 'jszip';
 import { parseCookies } from '~/lib/api/cookies';
 

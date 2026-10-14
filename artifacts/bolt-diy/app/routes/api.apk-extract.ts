@@ -1,4 +1,4 @@
-import { json, type ActionFunctionArgs } from '@remix-run/cloudflare';
+import { json, type ActionFunctionArgs } from '@remix-run/node';
 import { extractApkWithTools, type ApkExtractionStage } from '~/lib/services/apkExtraction';
 
 export async function action({ request }: ActionFunctionArgs) {

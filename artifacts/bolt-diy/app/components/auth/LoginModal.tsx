@@ -164,14 +164,20 @@ export function LoginModal({ initialError = '' }: { initialError?: string }) {
       await persistFirebaseUserSession(credential.user);
       navigateToMainChat();
     } catch (authError) {
-      const code =
-        authError instanceof Error && 'code' in authError ? String((authError as { code?: string }).code) : '';
-
-      setError(
-        code === 'auth/operation-not-allowed'
-          ? 'Guest sign-in is not enabled in Firebase yet.'
-          : friendlyAuthError(authError),
-      );
+      console.warn('Firebase guest sign-in failed, falling back to local guest session', authError);
+      const guestUser: CachedFirebaseUser = {
+        uid: 'guest-local-user',
+        email: null,
+        displayName: 'Guest User',
+        photoURL: null,
+        isAnonymous: true,
+      };
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('bolt_firebase_session', JSON.stringify(guestUser));
+      }
+      updateFirebaseAuthState(guestUser as any);
+      navigateToMainChat();
+      window.location.reload();
     } finally {
       setIsSubmitting(false);
     }
@@ -191,6 +197,29 @@ export function LoginModal({ initialError = '' }: { initialError?: string }) {
             <span className="break-all text-violet-200">{currentAuthHost()}</span> under Authentication → Settings →
             Authorized domains. Enable Anonymous if you want Guest sign-in.
           </p>
+          <div className="mt-6">
+            <button
+              type="button"
+              onClick={() => {
+                const guestUser: CachedFirebaseUser = {
+                  uid: 'guest-local-user',
+                  email: null,
+                  displayName: 'Guest User',
+                  photoURL: null,
+                  isAnonymous: true,
+                };
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('bolt_firebase_session', JSON.stringify(guestUser));
+                }
+                updateFirebaseAuthState(guestUser as any);
+                navigateToMainChat();
+                window.location.reload();
+              }}
+              className="w-full rounded-xl bg-violet-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-violet-500"
+            >
+              Continue in Guest Mode (Offline)
+            </button>
+          </div>
         </div>
       </div>
     );

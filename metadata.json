@@ -1,0 +1,8 @@
+{
+  "name": "Bolt DIY",
+  "description": "An AI-assisted full-stack development workspace for creating and editing applications from natural-language prompts.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

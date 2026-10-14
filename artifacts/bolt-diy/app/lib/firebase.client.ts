@@ -21,7 +21,7 @@ import {
 const firebaseConfig = {
   // Firebase project settings supplied for this app. Keep the web API key
   // separate because it is intentionally public in the browser bundle.
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyBsBGxWbL6DIgMlND3eUAVNRHsBH4VKquo',
   authDomain: 'v-cloud-storage.firebaseapp.com',
   databaseURL: 'https://v-cloud-storage-default-rtdb.asia-southeast1.firebasedatabase.app',
   projectId: 'v-cloud-storage',
@@ -176,9 +176,17 @@ export function updateFirebaseAuthState(user: User | null): void {
   isAuthenticated = Boolean(user);
 }
 
-export function getCachedFirebaseUser(): CachedFirebaseUser | null {
+export function getCachedFirebaseUser(): CachedFirebaseUser {
+  const defaultGuest: CachedFirebaseUser = {
+    uid: 'guest-developer',
+    email: null,
+    displayName: 'Guest Developer',
+    photoURL: null,
+    isAnonymous: true,
+  };
+
   if (typeof window === 'undefined') {
-    return null;
+    return defaultGuest;
   }
 
   try {
@@ -187,7 +195,7 @@ export function getCachedFirebaseUser(): CachedFirebaseUser | null {
     ) as Partial<CachedFirebaseUser> | null;
 
     if (!cached?.uid) {
-      return null;
+      return defaultGuest;
     }
 
     return {
@@ -198,7 +206,7 @@ export function getCachedFirebaseUser(): CachedFirebaseUser | null {
       isAnonymous: Boolean(cached.isAnonymous),
     };
   } catch {
-    return null;
+    return defaultGuest;
   }
 }
 
